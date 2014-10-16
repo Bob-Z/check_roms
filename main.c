@@ -123,6 +123,7 @@ void check_roms_file(int merged)
 	llist_t * rom;
 	char buf[10000];
 	char * name;
+	char * romof;
 	char * merge;
 	char * status;
 	int missing_roms_count = 0;
@@ -137,6 +138,14 @@ void check_roms_file(int merged)
 
 	current = find_first_node(listxml,entry_type);
 	do {
+		/* Skip merged file */
+		if( merged ) {
+			romof = find_attr(current,"romof");
+			if( romof != NULL ) {
+				continue;
+			}
+		}
+
 		rom_needed = 1;
 
 		name = find_attr(current,"name");
