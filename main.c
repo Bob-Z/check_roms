@@ -44,6 +44,7 @@
 #define SOFTLIST_ENTRY_TYPE "softwarelist"
 #define SOFT_ENTRY_TYPE "software"
 
+#define NOT_MERGED 0
 #define MERGED 1
 
 #include <stdio.h>
@@ -355,7 +356,7 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 	} while((current=find_next_node(current))!=NULL);
 }
 
-void check_softlists()
+void check_softlists(int merged)
 {
 	llist_t * current;
 	char buf[10000];
@@ -366,6 +367,10 @@ void check_softlists()
 	int needed_softs_count = 0;
 	FILE * output_file = missing_softlists;
 	char * name;
+
+	if( merged ) {
+		output_file = missing_softlists_merged;
+	}
 
 	if(softlist == NULL) {
 		return;
@@ -692,12 +697,12 @@ int main(int argc, char * argv[])
 	printf("*************************\n");
 	printf("*Assuming non-merged set*\n");
 	printf("Checking existing roms:\n");
-	check_roms_file(!MERGED);
+	check_roms_file(NOT_MERGED);
 	printf("\n");
 	printf("Checking existing disks:\n");
-	check_disk_file(!MERGED);
+	check_disk_file(NOT_MERGED);
 	printf("\n");
-	check_softlists();
+	check_softlists(NOT_MERGED);
 	printf("\n");
 	printf("Checking un-needed files\n");
 	check_unneeded_file(roms_dir,0);
@@ -719,7 +724,7 @@ int main(int argc, char * argv[])
 	printf("Checking existing disks:\n");
 	check_disk_file(MERGED);
 	printf("\n");
-	check_softlists();
+	check_softlists(MERGED);
 	printf("\n");
 	printf("Checking un-needed files\n");
 	check_unneeded_file(roms_dir,1);
