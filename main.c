@@ -260,7 +260,7 @@ void check_disk_file(int merged)
 	printf("%d/%d disk files missing\n",missing_disk_count,needed_disk_count);
 }
 
-int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,int * needed, int * missing)
+int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,int * needed, int * missing,int merged)
 {
 	FILE * output_file = missing_softs;
 	llist_t * current;
@@ -272,6 +272,10 @@ int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,in
 	char buf[10000];
 	struct stat stat_buf;
 	int found = 0;
+
+	if( merged ) {
+		output_file = missing_softs_merged;
+	}
 
 	cloneof=find_attr(list,"cloneof");
 
@@ -317,7 +321,7 @@ int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,in
 	return found;
 }
 
-void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing)
+void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing, int merged)
 {
 	FILE * output_file = missing_softs;
 	llist_t * current;
@@ -345,7 +349,7 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 		}
 //		sprintf(buf,"%s/%s/%s",roms_dir,softlist_name,name);
 //		if( stat(buf,&stat_buf) == 0 ) {
-			if(check_soft_disks(softlist_name,name,current,needed,missing)) {
+			if(check_soft_disks(softlist_name,name,current,needed,missing,merged)) {
 				confirmed_number++;
 				add_confirmed(buf);
 				continue;
@@ -388,7 +392,7 @@ void check_softlists(int merged)
 		if( stat(buf,&stat_buf) == 0 ) {
 			confirmed_number++;
 			add_confirmed(buf);
-			check_softs(name,current,&needed_softs_count,&missing_softs_count);
+			check_softs(name,current,&needed_softs_count,&missing_softs_count,merged);
 			continue;
 		}
 		fprintf(output_file,"%s\n",name);
