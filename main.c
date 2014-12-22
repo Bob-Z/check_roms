@@ -1,52 +1,3 @@
-#if 0
-#define WITH_SOFTLIST 1
-#define WORKING_DIR "/home/fred/mess/mess"
-#define BINARY "~/mess/mess/mess"
-#define BINARY_LISTXML "~/mess/mess/mess -listxml"
-#define BINARY_GETSOFTLIST "~/mess/mess/mess -getsoftlist"
-#define LIST_XML "/tmp/check_roms_listxml"
-#define LIST_SOFTWARE "/tmp/check_roms_listsoftware"
-#define ROMS_DIR "/media/4To/Mess/roms"
-#define ROOT_NODE "mess"
-#define ENTRY_TYPE "machine"
-#define SOFT_ROOT_NODE "softwarelist"
-#endif
-
-#define MESS_MODE 0
-#define MAME_MODE 1
-#define UME_MODE 2
-
-#define TMP_DIR "/media/4To/tmp/"
-
-#define MAME_WORKING_DIR "/media/4To/emu/mame/trunk"
-#define MAME_BINARY "/media/4To/emu/mame/trunk/mame"
-#define MAME_ROMS_DIR "/media/4To/Mame/roms"
-#define MAME_ROOT_NODE "mame"
-#define MAME_ENTRY_TYPE "game"
-
-#define UME_WORKING_DIR "/media/4To/emu//mame/trunk"
-#define UME_BINARY "/media/4To/emu/mame/trunk/ume"
-#define UME_ROMS_DIR "/media/4To/Mess/roms"
-#define UME_ROOT_NODE "ume"
-#define UME_ENTRY_TYPE "game"
-
-#define MESS_WORKING_DIR "/media/4To/emu/mame/trunk"
-#define MESS_BINARY "/media/4To/emu/mame/trunk/mess"
-#define MESS_ROMS_DIR "/media/4To/Mess/roms"
-#define MESS_ROOT_NODE "mess"
-#define MESS_ENTRY_TYPE "machine"
-
-#define PARAM_LISTXML "-listxml"
-#define PARAM_GETSOFTLIST "-getsoftlist"
-#define LIST_XML "/media/4To/tmp/check_roms_listxml"
-#define LIST_SOFTWARE "/media/4To/tmp/check_roms_listsoftware"
-#define SOFTLIST_ROOT_NODE "softwarelists"
-#define SOFTLIST_ENTRY_TYPE "softwarelist"
-#define SOFT_ENTRY_TYPE "software"
-
-#define NOT_MERGED 0
-#define MERGED 1
-
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
@@ -59,23 +10,69 @@
 #include <pthread.h>
 #include <getopt.h>
 
-#define MISSING_ROMS "/media/4To/tmp/missing_roms"
-#define MISSING_DISKS "/media/4To/tmp/missing_disks"
-#define MISSING_SOFTLISTS "/media/4To/tmp/missing_softlists"
-#define MISSING_SOFTS "/media/4To/tmp/missing_softs"
-#define UNNEEDED_FILES "/media/4To/tmp/unneeded_files"
-#define UNNEEDED_DIRECTORIES "/media/4To/tmp/unneeded_directories"
-#define MISSING_ROMS_MERGED "/media/4To/tmp/missing_roms_merged"
-#define MISSING_DISKS_MERGED "/media/4To/tmp/missing_disks_merged"
-#define MISSING_SOFTLISTS_MERGED "/media/4To/tmp/missing_softlists_merged"
-#define MISSING_SOFTS_MERGED "/media/4To/tmp/missing_softs_merged"
-#define UNNEEDED_FILES_MERGED "/media/4To/tmp/unneeded_files_merged"
-#define UNNEEDED_DIRECTORIES_MERGED "/media/4To/tmp/unneeded_directories_merged"
+#define MESS_MODE 0
+#define MAME_MODE 1
+#define UME_MODE 2
+
+#define MAME_ROOT_NODE "mame"
+#define MAME_ENTRY_TYPE "game"
+
+#define UME_ROOT_NODE "ume"
+#define UME_ENTRY_TYPE "game"
+
+#define MESS_ROOT_NODE "mess"
+#define MESS_ENTRY_TYPE "machine"
+
+#define PARAM_LISTXML "-listxml"
+#define PARAM_GETSOFTLIST "-getsoftlist"
+#define SOFTLIST_ENTRY_TYPE "softwarelist"
+#define SOFT_ENTRY_TYPE "software"
+
+#define NOT_MERGED 0
+#define MERGED 1
+
+#define MISSING_ROMS "/missing_roms"
+#define MISSING_DISKS "/missing_disks"
+#define MISSING_SOFTLISTS "/missing_softlists"
+#define MISSING_SOFTS "/missing_softs"
+#define UNNEEDED_FILES "/unneeded_files"
+#define UNNEEDED_DIRECTORIES "/unneeded_directories"
+#define MISSING_ROMS_MERGED "/missing_roms_merged"
+#define MISSING_DISKS_MERGED "/missing_disks_merged"
+#define MISSING_SOFTLISTS_MERGED "/missing_softlists_merged"
+#define MISSING_SOFTS_MERGED "/missing_softs_merged"
+#define UNNEEDED_FILES_MERGED "/unneeded_files_merged"
+#define UNNEEDED_DIRECTORIES_MERGED "/unneeded_directories_merged"
+
+#define BUFFER_SIZE (10000)
 
 llist_t * listxml;
 llist_t * softlist;
 int unneeded_dir = 0;
 int unneeded_file = 0;
+
+char * tmp_dir = NULL;
+char * working_dir = NULL;
+char * binary = NULL;
+char * roms_dir = NULL;
+char * root_node = NULL;
+char * entry_type = NULL;
+
+char * missing_roms_path = NULL;
+char * missing_disks_path = NULL;
+char * missing_softlists_path = NULL;
+char * missing_softs_path = NULL;
+char * unneeded_files_path = NULL;
+char * unneeded_directories_path = NULL;
+char * missing_roms_merged_path = NULL;
+char * missing_disks_merged_path = NULL;
+char * missing_softlists_merged_path = NULL;
+char * missing_softs_merged_path = NULL;
+char * unneeded_files_merged_path = NULL;
+char * unneeded_directories_merged_path = NULL;
+
+char * list_xml = NULL;
+char * list_software = NULL;
 
 FILE * missing_roms = NULL;
 FILE * missing_disks = NULL;
@@ -92,10 +89,6 @@ FILE * unneeded_directories_merged = NULL;
 
 int emumode = MESS_MODE;
 int update = 0;
-
-char * binary = NULL;
-char * roms_dir = NULL;
-char * entry_type = NULL;
 
 const char optstring[] = "?muU";
 const struct option longopts[] =
@@ -122,7 +115,7 @@ void check_roms_file(int merged)
 {
 	llist_t * current;
 	llist_t * rom;
-	char buf[10000];
+	char buf[BUFFER_SIZE];
 	char * name;
 	char * romof;
 	char * merge;
@@ -198,7 +191,7 @@ void check_disk_file(int merged)
 {
 	llist_t * current;
 	llist_t * disk;
-	char buf[10000];
+	char buf[BUFFER_SIZE];
 	char * name;
 	char * cloneof;
 	char * merge;
@@ -269,7 +262,7 @@ int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,in
 	llist_t * current_diskarea;
 	llist_t * current_disk;
 	char * name_disk;
-	char buf[10000];
+	char buf[BUFFER_SIZE];
 	struct stat stat_buf;
 	int found = 0;
 
@@ -326,7 +319,7 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 	FILE * output_file = missing_softs;
 	llist_t * current;
 	char * name;
-	char buf[10000];
+	char buf[BUFFER_SIZE];
 	struct stat stat_buf;
 
 	current = find_first_node(list,SOFT_ENTRY_TYPE);
@@ -363,7 +356,7 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 void check_softlists(int merged)
 {
 	llist_t * current;
-	char buf[10000];
+	char buf[BUFFER_SIZE];
 	struct stat stat_buf;
 	int missing_softlists_count = 0;
 	int needed_softlists_count = 0;
@@ -410,7 +403,7 @@ int compare_file_to_list(char * basepath, char * currentpath, int merged)
 	int no_empty = 0;
 	int ret;
 	int i;
-	char buf[10000];
+	char buf[BUFFER_SIZE];
 	FILE * output_files = unneeded_files;
 	FILE * output_directories = unneeded_directories;
 
@@ -485,7 +478,6 @@ void * launch_load_listxml(void * arg)
         char filename[1024];
         char cmd[1024];
         struct stat stat_info;
-//      char * type_info = (char *)arg;
         char * type_info = PARAM_LISTXML;
 
         data.root_node = NULL;
@@ -493,23 +485,8 @@ void * launch_load_listxml(void * arg)
         data.xml_filter = NULL;
         data.current = NULL;
 
-	switch(emumode) {
-		case MAME_MODE:
-			sprintf(filename,"%s%s%s",TMP_DIR,MAME_ROOT_NODE,type_info);
-			sprintf(cmd,"%s %s | tee %s ",MAME_BINARY,type_info,filename);
-			break;
-		case UME_MODE:
-			sprintf(filename,"%s%s%s",TMP_DIR,UME_ROOT_NODE,type_info);
-			sprintf(cmd,"%s %s | tee %s",UME_BINARY,type_info,filename);
-			break;
-		case MESS_MODE:
-			sprintf(filename,"%s%s%s",TMP_DIR,MESS_ROOT_NODE,type_info);
-			sprintf(cmd,"%s %s | tee %s",MESS_BINARY,type_info,filename);
-			break;
-		default:
-			printf("Unknow emu type\n");
-			exit(-1);
-	}
+	sprintf(filename,"%s%s%s",tmp_dir,root_node,type_info);
+	sprintf(cmd,"%s %s | tee %s ",binary,type_info,filename);
 		
         if(stat(filename,&stat_info)==0 && !update) {
                 sprintf(cmd,"/bin/cat %s",filename);
@@ -525,7 +502,6 @@ void * launch_load_getsoftlist(void * arg)
         char filename[1024];
         char cmd[1024];
         struct stat stat_info;
-//      char * type_info = (char *)arg;
         char * type_info = PARAM_GETSOFTLIST;
 
         data.root_node = NULL;
@@ -533,23 +509,8 @@ void * launch_load_getsoftlist(void * arg)
         data.xml_filter = NULL;
         data.current = NULL;
 
-	switch(emumode) {
-		case MAME_MODE:
-			sprintf(filename,"%s%s%s",TMP_DIR,MAME_ROOT_NODE,type_info);
-			sprintf(cmd,"%s %s | tee %s ",MAME_BINARY,type_info,filename);
-			break;
-		case UME_MODE:
-			sprintf(filename,"%s%s%s",TMP_DIR,UME_ROOT_NODE,type_info);
-			sprintf(cmd,"%s %s | tee %s",UME_BINARY,type_info,filename);
-			break;
-		case MESS_MODE:
-			sprintf(filename,"%s%s%s",TMP_DIR,MESS_ROOT_NODE,type_info);
-			sprintf(cmd,"%s %s | tee %s",MESS_BINARY,type_info,filename);
-			break;
-		default:
-			printf("Unknow emu type\n");
-			exit(-1);
-	}
+	sprintf(filename,"%s%s%s",tmp_dir,root_node,type_info);
+	sprintf(cmd,"%s %s | tee %s ",binary,type_info,filename);
 
         if(stat(filename,&stat_info)==0 && !update ) {
                 sprintf(cmd,"/bin/cat %s",filename);
@@ -557,6 +518,116 @@ void * launch_load_getsoftlist(void * arg)
 
         softlist = LoadXML(cmd,&data,filter);
         return NULL;
+}
+
+void init()
+{
+	char buf[BUFFER_SIZE];
+
+	switch(emumode) {
+		case MAME_MODE:
+			roms_dir = getenv("MAME_ROMS_DIR");
+			if(roms_dir == NULL) {
+				printf("MAME_ROMS_DIR not set in environnement variable\n");
+				exit(-1);
+			}
+			binary = getenv("MAME_BINARY");
+			if(binary == NULL) {
+				printf("MAME_BINARY not set in environnement variable\n");
+				exit(-1);
+			}
+			root_node = MAME_ROOT_NODE;
+			entry_type = MAME_ENTRY_TYPE;
+			break;
+		case UME_MODE:
+			roms_dir = getenv("UME_ROMS_DIR");
+			if(roms_dir == NULL) {
+				printf("UME_ROMS_DIR not set in environnement variable\n");
+				exit(-1);
+			}
+			binary = getenv("UME_BINARY");
+			if(binary == NULL) {
+				printf("UME_BINARY not set in environnement variable\n");
+				exit(-1);
+			}
+			root_node = UME_ROOT_NODE;
+			entry_type = UME_ENTRY_TYPE;
+			break;
+		case MESS_MODE:
+			roms_dir = getenv("MESS_ROMS_DIR");
+			if(roms_dir == NULL) {
+				printf("MESS_ROMS_DIR not set in environnement variable\n");
+				exit(-1);
+			}
+			binary = getenv("MESS_BINARY");
+			if(binary == NULL) {
+				printf("MESS_BINARY not set in environnement variable\n");
+				exit(-1);
+			}
+			root_node = MESS_ROOT_NODE;
+			entry_type = MESS_ENTRY_TYPE;
+			break;
+		default:
+			printf("Unknown mode\n");
+			exit(-1);
+        }
+
+	printf("Roms   : %s\n",roms_dir);
+	printf("Binary : %s\n",binary);
+
+	tmp_dir = getenv("TMP_DIR");
+	if( tmp_dir == NULL ) {
+		printf("TMP_DIR not set in environnement variable\n");
+		exit(-1);
+	}
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_ROMS);
+	missing_roms_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_DISKS);
+	missing_disks_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_SOFTLISTS);
+	missing_softlists_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_SOFTS);
+	missing_softs_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,UNNEEDED_FILES);
+	unneeded_files_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,UNNEEDED_DIRECTORIES);
+	unneeded_directories_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_ROMS_MERGED);
+	missing_roms_merged_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_DISKS_MERGED);
+	missing_disks_merged_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_SOFTLISTS_MERGED);
+	missing_softlists_merged_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,MISSING_SOFTS_MERGED);
+	missing_softs_merged_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,UNNEEDED_FILES_MERGED);
+	unneeded_files_merged_path = strdup(buf);
+
+	strncpy(buf,tmp_dir,BUFFER_SIZE);
+	strcat(buf,UNNEEDED_DIRECTORIES_MERGED);
+	unneeded_directories_merged_path = strdup(buf);
 }
 
 int main(int argc, char * argv[])
@@ -591,87 +662,67 @@ int main(int argc, char * argv[])
                 }
         }
 
-	switch(emumode) {
-		case MAME_MODE:
-			roms_dir = MAME_ROMS_DIR;
-			binary = MAME_BINARY;
-			entry_type = MAME_ENTRY_TYPE;
-			break;
-		case UME_MODE:
-			roms_dir = UME_ROMS_DIR;
-			binary = UME_BINARY;
-			entry_type = UME_ENTRY_TYPE;
-			break;
-		case MESS_MODE:
-			roms_dir = MESS_ROMS_DIR;
-			binary = MESS_BINARY;
-			entry_type = MESS_ENTRY_TYPE;
-			break;
-		default:
-			printf("Unknown mode\n");
-			exit(-1);
-        }
+	init();
 
-
-	missing_roms = fopen(MISSING_ROMS,"w");
+	missing_roms = fopen(missing_roms_path,"w");
 	if( missing_roms == NULL ) {
-		printf("Error opening %s\n",MISSING_ROMS);
+		printf("Error opening %s\n",missing_roms_path);
 		exit(1);
 	}
-	missing_disks = fopen(MISSING_DISKS,"w");
+	missing_disks = fopen(missing_disks_path,"w");
 	if( missing_disks == NULL ) {
-		printf("Error opening %s\n",MISSING_DISKS);
+		printf("Error opening %s\n",missing_disks_path);
 		exit(1);
 	}
-	missing_softlists = fopen(MISSING_SOFTLISTS,"w");
+	missing_softlists = fopen(missing_softlists_path,"w");
 	if( missing_softlists == NULL ) {
-		printf("Error opening %s\n",MISSING_SOFTLISTS);
+		printf("Error opening %s\n",missing_softlists_path);
 		exit(1);
 	}
-	missing_softs = fopen(MISSING_SOFTS,"w");
+	missing_softs = fopen(missing_softs_path,"w");
 	if( missing_softs == NULL ) {
-		printf("Error opening %s\n",MISSING_SOFTS);
+		printf("Error opening %s\n",missing_softs_path);
 		exit(1);
 	}
-	unneeded_files = fopen(UNNEEDED_FILES,"w");
+	unneeded_files = fopen(unneeded_files_path,"w");
 	if( unneeded_files == NULL ) {
-		printf("Error opening %s\n",UNNEEDED_FILES);
+		printf("Error opening %s\n",unneeded_files_path);
 		exit(1);
 	}
-	unneeded_directories = fopen(UNNEEDED_DIRECTORIES,"w");
+	unneeded_directories = fopen(unneeded_directories_path,"w");
 	if( unneeded_directories == NULL ) {
-		printf("Error opening %s\n",UNNEEDED_DIRECTORIES);
+		printf("Error opening %s\n",unneeded_directories_path);
 		exit(1);
 	}
 
-	missing_roms_merged = fopen(MISSING_ROMS_MERGED,"w");
+	missing_roms_merged = fopen(missing_roms_merged_path,"w");
 	if( missing_roms_merged == NULL ) {
-		printf("Error opening %s\n",MISSING_ROMS_MERGED);
+		printf("Error opening %s\n",missing_roms_merged_path);
 		exit(1);
 	}
-	missing_disks_merged = fopen(MISSING_DISKS_MERGED,"w");
+	missing_disks_merged = fopen(missing_disks_merged_path,"w");
 	if( missing_disks_merged == NULL ) {
-		printf("Error opening %s\n",MISSING_DISKS_MERGED);
+		printf("Error opening %s\n",missing_disks_merged_path);
 		exit(1);
 	}
-	missing_softlists_merged = fopen(MISSING_SOFTLISTS_MERGED,"w");
+	missing_softlists_merged = fopen(missing_softlists_merged_path,"w");
 	if( missing_softlists_merged == NULL ) {
-		printf("Error opening %s\n",MISSING_SOFTLISTS_MERGED);
+		printf("Error opening %s\n",missing_softlists_merged_path);
 		exit(1);
 	}
-	missing_softs_merged = fopen(MISSING_SOFTS_MERGED,"w");
+	missing_softs_merged = fopen(missing_softs_merged_path,"w");
 	if( missing_softs_merged == NULL ) {
-		printf("Error opening %s\n",MISSING_SOFTS_MERGED);
+		printf("Error opening %s\n",missing_softs_merged_path);
 		exit(1);
 	}
-	unneeded_files_merged = fopen(UNNEEDED_FILES_MERGED,"w");
+	unneeded_files_merged = fopen(unneeded_files_merged_path,"w");
 	if( unneeded_files_merged == NULL ) {
-		printf("Error opening %s\n",UNNEEDED_FILES_MERGED);
+		printf("Error opening %s\n",unneeded_files_merged_path);
 		exit(1);
 	}
-	unneeded_directories_merged = fopen(UNNEEDED_DIRECTORIES_MERGED,"w");
+	unneeded_directories_merged = fopen(unneeded_directories_merged_path,"w");
 	if( unneeded_directories_merged == NULL ) {
-		printf("Error opening %s\n",UNNEEDED_DIRECTORIES_MERGED);
+		printf("Error opening %s\n",unneeded_directories_merged_path);
 		exit(1);
 	}
         printf("Loading lists\n");
@@ -734,6 +785,5 @@ int main(int argc, char * argv[])
 	check_unneeded_file(roms_dir,1);
 	printf("%d un-needed directories\n",unneeded_dir);
 	printf("%d un-needed files\n",unneeded_file);
-	//sleep(1000000);
 	return 0;
 }
