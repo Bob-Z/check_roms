@@ -244,12 +244,11 @@ void check_disk_file(int merged)
 	printf("%d/%d disk files missing\n",missing_disk_count,needed_disk_count);
 }
 
-int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,int * needed, int * missing,int merged)
+int check_soft_disks(char * softlist_name,char * parent_soft_name,llist_t * list,int * needed, int * missing,int merged)
 {
 	FILE * output_file = missing_softs;
 	llist_t * current;
 	char * name;
-	char * cloneof = NULL;
 	llist_t * current_diskarea;
 	llist_t * current_disk;
 	char * name_disk;
@@ -260,8 +259,6 @@ int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,in
 	if( merged ) {
 		output_file = missing_softs_merged;
 	}
-
-	cloneof=find_attr(list,"cloneof");
 
 	current = find_first_node(list,"part");
 	do {
@@ -279,17 +276,7 @@ int check_soft_disks(char * softlist_name,char * software_name,llist_t * list,in
 				(*needed)++;
 				name_disk = find_attr(current_disk,"name");
 
-				if(cloneof) {
-					sprintf(buf,"%s/%s/%s/%s.chd",roms_dir,softlist_name,cloneof,name_disk);
-					if( stat(buf,&stat_buf) == 0 ) {
-						confirmed_number++;
-						add_confirmed(buf);
-						found = 1;
-						continue;
-					}
-				}
-
-				sprintf(buf,"%s/%s/%s/%s.chd",roms_dir,softlist_name,software_name,name_disk);
+				sprintf(buf,"%s/%s/%s/%s.chd",roms_dir,softlist_name,parent_soft_name,name_disk);
 				if( stat(buf,&stat_buf) == 0 ) {
 					confirmed_number++;
 					add_confirmed(buf);
@@ -310,6 +297,8 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 	FILE * output_file = missing_softs;
 	llist_t * current;
 	char * name;
+	char * cloneof;
+	char * parent_name;
 	char buf[BUFFER_SIZE];
 	struct stat stat_buf;
 
@@ -319,30 +308,37 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 
 	current = find_first_node(list,SOFT_ENTRY_TYPE);
 	do {
-		name = find_attr(current,"name");
-
 		(*needed)++;
 
-		sprintf(buf,"%s/%s/%s.zip",roms_dir,softlist_name,name);
-		if( stat(buf,&stat_buf) == 0 ) {
-			confirmed_number++;
-			add_confirmed(buf);
-			continue;
-		}
-		sprintf(buf,"%s/%s/%s.7z",roms_dir,softlist_name,name);
-		if( stat(buf,&stat_buf) == 0 ) {
-			confirmed_number++;
-			add_confirmed(buf);
-			continue;
-		}
-//		sprintf(buf,"%s/%s/%s",roms_dir,softlist_name,name);
-//		if( stat(buf,&stat_buf) == 0 ) {
-			if(check_soft_disks(softlist_name,name,current,needed,missing,merged)) {
-				confirmed_number++;
-				add_confirmed(buf);
-				continue;
+		name = find_attr(current,"name");
+		cloneof = find_attr(current,"cloneof");
+
+		parent_name = name;
+		if( merged ) {
+			if( cloneof ) {
+				parent_name = cloneof;
 			}
-//		}
+		}
+
+		sprintf(buf,"%s/%s/%s.zip",roms_dir,softlist_name,parent_name);
+		if( stat(buf,&stat_buf) == 0 ) {
+			confirmed_number++;
+			add_confirmed(buf);
+			continue;
+		}
+		sprintf(buf,"%s/%s/%s.7z",roms_dir,softlist_name,parent_name);
+		if( stat(buf,&stat_buf) == 0 ) {
+			confirmed_number++;
+			add_confirmed(buf);
+			continue;
+		}
+
+		if(check_soft_disks(softlist_name,parent_name,current,needed,missing,merged)) {
+			confirmed_number++;
+			add_confirmed(buf);
+			continue;
+		}
+
 		fprintf(output_file,"%s\n",buf);
 		(*missing)++;
 	} while((current=find_next_node(current))!=NULL);
