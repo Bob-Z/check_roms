@@ -10,18 +10,8 @@
 #include <pthread.h>
 #include <getopt.h>
 
-#define MESS_MODE 0
-#define MAME_MODE 1
-#define UME_MODE 2
-
 #define MAME_ROOT_NODE "mame"
-#define MAME_ENTRY_TYPE "game"
-
-#define UME_ROOT_NODE "ume"
-#define UME_ENTRY_TYPE "game"
-
-#define MESS_ROOT_NODE "mess"
-#define MESS_ENTRY_TYPE "machine"
+#define MAME_ENTRY_TYPE "machine"
 
 #define PARAM_LISTXML "-listxml"
 #define PARAM_GETSOFTLIST "-getsoftlist"
@@ -87,13 +77,10 @@ FILE * missing_softs_merged = NULL;
 FILE * unneeded_files_merged = NULL;
 FILE * unneeded_directories_merged = NULL;
 
-int emumode = MESS_MODE;
 int update = 0;
 
-const char optstring[] = "?muU";
-const struct option longopts[] =
-        {{ "mame",no_argument,NULL,'m' },
-        { "ume",no_argument,NULL,'u' },
+const char optstring[] = "?U";
+const struct option longopts[] = {
         { "update",no_argument,NULL,'U' },
         {NULL,0,NULL,0}};
 
@@ -524,53 +511,18 @@ void init()
 {
 	char buf[BUFFER_SIZE];
 
-	switch(emumode) {
-		case MAME_MODE:
-			roms_dir = getenv("MAME_ROMS_DIR");
-			if(roms_dir == NULL) {
-				printf("MAME_ROMS_DIR not set in environnement variable\n");
-				exit(-1);
-			}
-			binary = getenv("MAME_BINARY");
-			if(binary == NULL) {
-				printf("MAME_BINARY not set in environnement variable\n");
-				exit(-1);
-			}
-			root_node = MAME_ROOT_NODE;
-			entry_type = MAME_ENTRY_TYPE;
-			break;
-		case UME_MODE:
-			roms_dir = getenv("UME_ROMS_DIR");
-			if(roms_dir == NULL) {
-				printf("UME_ROMS_DIR not set in environnement variable\n");
-				exit(-1);
-			}
-			binary = getenv("UME_BINARY");
-			if(binary == NULL) {
-				printf("UME_BINARY not set in environnement variable\n");
-				exit(-1);
-			}
-			root_node = UME_ROOT_NODE;
-			entry_type = UME_ENTRY_TYPE;
-			break;
-		case MESS_MODE:
-			roms_dir = getenv("MESS_ROMS_DIR");
-			if(roms_dir == NULL) {
-				printf("MESS_ROMS_DIR not set in environnement variable\n");
-				exit(-1);
-			}
-			binary = getenv("MESS_BINARY");
-			if(binary == NULL) {
-				printf("MESS_BINARY not set in environnement variable\n");
-				exit(-1);
-			}
-			root_node = MESS_ROOT_NODE;
-			entry_type = MESS_ENTRY_TYPE;
-			break;
-		default:
-			printf("Unknown mode\n");
-			exit(-1);
-        }
+	roms_dir = getenv("MAME_ROMS_DIR");
+	if(roms_dir == NULL) {
+		printf("MAME_ROMS_DIR not set in environnement variable\n");
+		exit(-1);
+	}
+	binary = getenv("MAME_BINARY");
+	if(binary == NULL) {
+		printf("MAME_BINARY not set in environnement variable\n");
+		exit(-1);
+	}
+	root_node = MAME_ROOT_NODE;
+	entry_type = MAME_ENTRY_TYPE;
 
 	printf("Roms   : %s\n",roms_dir);
 	printf("Binary : %s\n",binary);
@@ -644,19 +596,11 @@ int main(int argc, char * argv[])
 
 	        while((opt_ret = getopt_long(argc, argv, optstring, longopts, NULL))!=-1) {
                 switch(opt_ret) {
-                        case 'm':
-                                emumode = MAME_MODE;
-                                break;
-                        case 'u':
-                                emumode = MAME_MODE;
-                                break;
                         case 'U':
                                 update = 1;
                                 break;
                         default:
                                 printf("HELP:\n\n");
-                                printf("-m : use MAME instead of MESS\n");
-                                printf("-u : use UME instead of MESS\n");
                                 printf("-U : update cache from binaries\n");
                                 exit(0);
                 }
