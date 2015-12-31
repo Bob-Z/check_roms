@@ -180,7 +180,7 @@ void check_disk_file(int merged)
 	llist_t * disk;
 	char buf[BUFFER_SIZE];
 	char * name;
-	char * cloneof;
+	char * romof;
 	char * merge;
 	char * status;
 	char * disk_name;
@@ -196,7 +196,7 @@ void check_disk_file(int merged)
 	current = find_first_node(listxml,entry_type);
 	do {
 		name = find_attr(current,"name");
-		cloneof = find_attr(current,"cloneof");
+		romof = find_attr(current,"romof");
 
 		/* Check if a disk is needed for this entry */
 		disk = find_first_node(current,"disk");
@@ -215,22 +215,26 @@ void check_disk_file(int merged)
 			needed_disk_count++;
 
 			disk_name=find_attr(disk,"name");
-			if(merged && cloneof) {
-				sprintf(buf,"%s/%s/%s.chd",roms_dir,cloneof,disk_name);
-				if(stat(buf,&stat_info)==0) {
-					confirmed_number++;
-					add_confirmed(buf);
-					continue;
-				}
+
+			// Try to find disk in machine directory
+			sprintf(buf,"%s/%s/%s.chd",roms_dir,name,disk_name);
+			if(stat(buf,&stat_info)==0) {
+				confirmed_number++;
+				add_confirmed(buf);
+				continue;
 			}
 			else {
-				sprintf(buf,"%s/%s/%s.chd",roms_dir,name,disk_name);
-				if(stat(buf,&stat_info)==0) {
-					confirmed_number++;
-					add_confirmed(buf);
-					continue;
+			// Try in romof machine in case of merged set
+				if(merged && romof) {
+					sprintf(buf,"%s/%s/%s.chd",roms_dir,romof,disk_name);
+					if(stat(buf,&stat_info)==0) {
+						confirmed_number++;
+						add_confirmed(buf);
+						continue;
+					}
 				}
 			}
+
 			fprintf(output_file,"%s/%s\n",name,disk_name);
 			missing_disk_count++;
 		}while((disk=find_next_node(disk))!=NULL);
@@ -308,6 +312,10 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 	char * name;
 	char buf[BUFFER_SIZE];
 	struct stat stat_buf;
+
+        if( merged ) {
+                output_file = missing_softs_merged;
+        }
 
 	current = find_first_node(list,SOFT_ENTRY_TYPE);
 	do {
