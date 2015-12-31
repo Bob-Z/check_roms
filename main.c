@@ -264,8 +264,10 @@ int check_soft_disks(char * softlist_name,char * parent_soft_name,llist_t * list
 	do {
 		name = find_attr(current,"name");
 
-		if(strncmp(name,"cdrom",5) && 
-			strncmp(name,"hdd",3) ) {
+		if(strncmp(name,"cdrom",5)
+			&& strncmp(name,"hdd",3)
+			&& strncmp(name,"disc",4)
+			) {
 			continue;
 		}
 
