@@ -247,7 +247,7 @@ void check_disk_file(int merged)
 int check_soft_disks(char * softlist_name,char * parent_soft_name,llist_t * list,int * needed, int * missing,int merged)
 {
 	FILE * output_file = missing_softs;
-	llist_t * current;
+	llist_t * current_part;
 	char * name;
 	llist_t * current_diskarea;
 	llist_t * current_disk;
@@ -260,9 +260,9 @@ int check_soft_disks(char * softlist_name,char * parent_soft_name,llist_t * list
 		output_file = missing_softs_merged;
 	}
 
-	current = find_first_node(list,"part");
+	current_part = find_first_node(list,"part");
 	do {
-		name = find_attr(current,"name");
+		name = find_attr(current_part,"name");
 
 		if(strncmp(name,"cdrom",5)
 			&& strncmp(name,"hdd",3)
@@ -271,7 +271,7 @@ int check_soft_disks(char * softlist_name,char * parent_soft_name,llist_t * list
 			continue;
 		}
 
-		current_diskarea = find_first_node(current,"diskarea");
+		current_diskarea = find_first_node(current_part,"diskarea");
 		do {
 			current_disk = find_first_node(current_diskarea,"disk");
 			do {
@@ -289,7 +289,7 @@ int check_soft_disks(char * softlist_name,char * parent_soft_name,llist_t * list
 				(*missing)++;
 			} while((current_disk=find_next_node(current_disk))!=NULL);
 		} while((current_diskarea=find_next_node(current_diskarea))!=NULL);
-	} while((current=find_next_node(current))!=NULL);
+	} while((current_part=find_next_node(current_part))!=NULL);
 
 	return found;
 }
@@ -303,6 +303,7 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 	char * parent_name;
 	char buf[BUFFER_SIZE];
 	struct stat stat_buf;
+	int found = 0;
 
         if( merged ) {
                 output_file = missing_softs_merged;
@@ -326,18 +327,24 @@ void check_softs(char * softlist_name,llist_t * list,int * needed, int * missing
 		if( stat(buf,&stat_buf) == 0 ) {
 			confirmed_number++;
 			add_confirmed(buf);
-			continue;
+			found = 1;
 		}
-		sprintf(buf,"%s/%s/%s.7z",roms_dir,softlist_name,parent_name);
-		if( stat(buf,&stat_buf) == 0 ) {
-			confirmed_number++;
-			add_confirmed(buf);
-			continue;
+		else {
+			sprintf(buf,"%s/%s/%s.7z",roms_dir,softlist_name,parent_name);
+			if( stat(buf,&stat_buf) == 0 ) {
+				confirmed_number++;
+				add_confirmed(buf);
+				found = 1;
+			}
 		}
 
 		if(check_soft_disks(softlist_name,parent_name,current,needed,missing,merged)) {
 			confirmed_number++;
 			add_confirmed(buf);
+			found = 1;
+		}
+
+		if( found == 1 ) {
 			continue;
 		}
 
