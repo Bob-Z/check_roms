@@ -264,14 +264,10 @@ int check_soft_disks(char * softlist_name,char * parent_soft_name,llist_t * list
 	do {
 		name = find_attr(current_part,"name");
 
-		if(strncmp(name,"cdrom",5)
-			&& strncmp(name,"hdd",3)
-			&& strncmp(name,"disc",4)
-			) {
+		current_diskarea = find_first_node(current_part,"diskarea");
+		if( current_diskarea == NULL ) {
 			continue;
 		}
-
-		current_diskarea = find_first_node(current_part,"diskarea");
 		do {
 			current_disk = find_first_node(current_diskarea,"disk");
 			do {
