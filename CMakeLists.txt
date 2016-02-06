@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.2.2)
 set(PROJECT_NAME check_roms)
 project ( ${PROJECT_NAME} C CXX )
 
